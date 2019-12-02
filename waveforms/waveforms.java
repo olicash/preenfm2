@@ -60,7 +60,7 @@ public static void main(String[] args) {
 
         int a = 440; // a is 440 hz...
         System.out.println("float frequency[] __attribute__ ((section(\".ccm\"))) = {");
-        for (int x = 0; x < 127; ++x)
+        for (int x = 0; x < 128; ++x)
         {
                 String freqString = df.format((double)(a / 32.0d) * (Math.pow(2.0d, ((x - 9.0d) / 12.0d))));
                 System.out.print(freqString);
@@ -68,7 +68,7 @@ public static void main(String[] args) {
                         System.out.print(" ");
                 }
 
-                if (x < 127 -1) {
+                if (x < 128 -1) {
                         System.out.print(", ");
                 }
                 if ((x % 5)==4) {
