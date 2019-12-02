@@ -602,8 +602,8 @@ bool Synth::decodeBufferAndApplyTuning(const uint8_t *buffer,int len) {
             case eSysexValid:
                 switch (sysex_ctr++)    // handle device ID
                 {
-                    case 0: case 2: break;
-                    case 1: case 3: if (b==0x08) state=eMatchingMTS; break; // no extended device IDs have byte 2 set to 0x08, so this is a safe check for MTS message
+                    case 0: if (b!=0x00 && b!=0x7F) state=eIgnoring; break;
+                    case 1: if (b==0x08) state=eMatchingMTS; break; // no extended device IDs have byte 2 set to 0x08, so this is a safe check for MTS message
                     default: state=eIgnoring; break;    // it's not an MTS message
                 }
                 break;
