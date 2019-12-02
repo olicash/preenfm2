@@ -17,12 +17,12 @@ SYMBOLS_FIRMWARE_O=build/symbols_p2_${PFM2_VERSION_NUMBER}o.txt
 
 BIN_SYSEX=build/p2_${PFM2_VERSION_NUMBER}.syx
 
-C      = arm-none-eabi-gcc
-CC      = arm-none-eabi-c++
-LD      = arm-none-eabi-ld -v
-CP      = arm-none-eabi-objcopy
-OD      = arm-none-eabi-objdump
-AS      = arm-none-eabi-as
+C      = /usr/gcc-arm-none-eabi-*/bin/arm-none-eabi-gcc
+CC      = /usr/gcc-arm-none-eabi-*/bin/arm-none-eabi-c++
+LD      = /usr/gcc-arm-none-eabi-*/bin/arm-none-eabi-ld -v
+CP      = /usr/gcc-arm-none-eabi-*/bin/arm-none-eabi-objcopy
+OD      = /usr/gcc-arm-none-eabi-*/bin/arm-none-eabi-objdump
+AS      = /usr/gcc-arm-none-eabi-*/bin/arm-none-eabi-as
 
 
 SRC_FIRMWARE = src/PreenFM.cpp \
@@ -254,13 +254,13 @@ $(BIN_FIRMWARE_O): $(ELF_FIRMWARE_O)
 
 $(ELF_FIRMWARE): $(OBJ_FIRMWARE) $(STARTUP)
 	$(CC) $(LFLAGS) $^ -o $@
-	arm-none-eabi-nm -l -S -n $(ELF_FIRMWARE) > $(SYMBOLS_FIRMWARE)
-	arm-none-eabi-readelf -S $(ELF_FIRMWARE)
+	/usr/gcc-arm-none-eabi-*/bin/arm-none-eabi-nm -l -S -n $(ELF_FIRMWARE) > $(SYMBOLS_FIRMWARE)
+	/usr/gcc-arm-none-eabi-*/bin/arm-none-eabi-readelf -S $(ELF_FIRMWARE)
 
 $(ELF_FIRMWARE_O): $(OBJ_FIRMWARE) $(STARTUP)
 	@$(CC) $(LFLAGS) $^ -o $@
-	arm-none-eabi-nm -l -S -n $(ELF_FIRMWARE_O) > $(SYMBOLS_FIRMWARE_O)
-	arm-none-eabi-readelf -S $(ELF_FIRMWARE_O)
+	/usr/gcc-arm-none-eabi-*/bin/arm-none-eabi-nm -l -S -n $(ELF_FIRMWARE_O) > $(SYMBOLS_FIRMWARE_O)
+	/usr/gcc-arm-none-eabi-*/bin/arm-none-eabi-readelf -S $(ELF_FIRMWARE_O)
 
 
 $(BIN_BOOTLOADER): $(ELF_BOOTLOADER)
@@ -269,8 +269,8 @@ $(BIN_BOOTLOADER): $(ELF_BOOTLOADER)
 
 $(ELF_BOOTLOADER): $(OBJ_BOOTLOADER) $(STARTUP_BOOTLOADER)
 	$(CC) $(LFLAGS_BOOTLOADER) $^ -o $@
-	arm-none-eabi-nm -l -S -n $(ELF_BOOTLOADER) > $(SYMBOLS_BOOTLOADER)
-	arm-none-eabi-readelf -S $(ELF_BOOTLOADER)
+	/usr/gcc-arm-none-eabi-*/bin/arm-none-eabi-nm -l -S -n $(ELF_BOOTLOADER) > $(SYMBOLS_BOOTLOADER)
+	/usr/gcc-arm-none-eabi-*/bin/arm-none-eabi-readelf -S $(ELF_BOOTLOADER)
 
 
 $(STARTUP): linker/startup_stm32f4xx.s
