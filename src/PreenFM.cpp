@@ -57,7 +57,7 @@ void fillSoundBuffer() {
     }
 }
 
-const char* line1 = "PreenFM2 v"PFM2_VERSION" "OVERCLOCK_STRING;
+const char* line1 = "PreenFM2 v"PFM2_VERSION" "OVERCLOCK_STRING" MTS";
 const char* line2 = "     By Xavier Hosxe";
 
 
