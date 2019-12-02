@@ -31,7 +31,7 @@
             endingColumnNumber = "9223372036854775807"
             startingLineNumber = "2017"
             endingLineNumber = "2017"
-            landmarkName = "SynthState::analyseSysexBuffer(uint8_t *buffer,int len)"
+            landmarkName = "SynthState::analyseSysexBuffer(uint8_t *buffer)"
             landmarkType = "7">
          </BreakpointContent>
       </BreakpointProxy>

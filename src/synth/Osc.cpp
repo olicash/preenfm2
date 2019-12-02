@@ -209,6 +209,23 @@ void Osc::glideToNote(struct OscState* oscState, int note) {
     oscState->fromFrequency = oscState->mainFrequency;
 }
 
+void Osc::updateTuning(struct OscState* oscState, int note, int nextGlidingNote)
+{
+    switch ((int)oscillator->frequencyType) {
+        case OSC_FT_KEYBOARD:
+            oscState->mainFrequency = frequencyToUse[note] * oscillator->frequencyMul * (1.0f + oscillator->detune * .05f);
+            if (nextGlidingNote!=-1) oscState->nextFrequency = frequencyToUse[nextGlidingNote] *  oscillator->frequencyMul  * (1.0f + oscillator->detune * .05f);
+            break;
+        case OSC_FT_KEYHZ:
+            oscState->mainFrequency = frequencyToUse[note] * oscillator->frequencyMul + oscillator->detune;
+            if (nextGlidingNote!=-1) oscState->nextFrequency = frequencyToUse[nextGlidingNote] * oscillator->frequencyMul + oscillator->detune;
+            break;
+        default:
+            break;
+    }
+    oscState->frequency = oscState->fromFrequency = oscState->mainFrequency;
+}
+
 
 void Osc::glideStep(struct OscState* oscState, float phase) {
     oscState->mainFrequency = oscState->fromFrequency * (1 - phase) + oscState->nextFrequency * phase;

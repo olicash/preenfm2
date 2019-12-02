@@ -52,7 +52,7 @@ void eraseNext(int pos) {
 }
 
 
-void debug(char *l, int i1, int i2) {
+void debug(const char *l, int i1, int i2) {
     int x = (pos % 2) * 10;
     int y = pos / 2;
     y = y % 4;
@@ -171,7 +171,9 @@ void MidiDecoder::newByte(unsigned char byte) {
             if (byte == MIDI_SYSEX_END) {
                 if (currentEventState.index < SYSEX_BUFFER_SIZE) {
                     // End of sysex =>Analyse Sysex
-                    this->synthState->analyseSysexBuffer(sysexBuffer);
+                    if (!this->synth->analyseSysexBuffer(sysexBuffer,currentEventState.index)) {
+                        this->synthState->analyseSysexBuffer(sysexBuffer);
+                    }
                 }
                 currentEventState.eventState = MIDI_EVENT_WAITING;
                 currentEventState.index = 0;

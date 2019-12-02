@@ -15,6 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <math.h>
 #include <stdlib.h>
 #include "Synth.h"
 #include "Menu.h"
@@ -27,6 +28,7 @@
 CYCCNT_buffer cycles_all;
 #endif
 
+extern float frequency[];
 extern float noise[32];
 float ratiosTimbre[]= { 131072.0f * 1.0f, 131072.0f * 1.0f, 131072.0f *  0.5f, 131072.0f * 0.333f, 131072.0f * 0.25f };
 
@@ -567,6 +569,137 @@ void Synth::setCurrentInstrument(int value) {
     if (value >=1 && value <= 4) {
         this->synthState->setCurrentInstrument(value);    
     }
+}
+
+bool Synth::analyseSysexBuffer(uint8_t *buffer,int len) {
+    if (buffer[0]!=0x7d && (buffer[0]==0x7e || buffer[0]==0x7f) && decodeBufferAndApplyTuning(buffer, len)) {
+        for (int i=0;i<MAX_NUMBER_OF_VOICES;i++) voices[i].updateOscillatorTunings();
+        return true;
+    }
+    return false;
+}
+
+bool Synth::decodeBufferAndApplyTuning(const uint8_t *buffer,int len) {
+    bool ret=false;
+    int sysex_ctr=0,sysex_value=0,note=0,numTunings=0;
+    int bank=-1,prog=0,checksum=0;short int channelBitmap=0;   // maybe we'll want to use these at some point
+    eSysexState state=eMatchingSysex;eMTSFormat format=eBulk;bool realtime=false;
+    for (int i=0;buffer[i]!=0xF7;i++)
+    {
+        unsigned char b=buffer[i];
+        if (b==0xF7) {state=eIgnoring;continue;}
+        switch (state)
+        {
+            case eIgnoring:
+                if (b==0xF0) state=eMatchingSysex;
+                break;
+            case eMatchingSysex:
+                sysex_ctr=0;
+                if (b==0x7E) state=eSysexValid;
+                else if (b==0x7F) realtime=true,state=eSysexValid;
+                else state=eMatchingSysex;   // don't switch to ignoring...Scala adds two bytes here, we need to skip over them
+                break;
+            case eSysexValid:
+                switch (sysex_ctr++)    // handle device ID
+                {
+                    case 0: case 2: break;
+                    case 1: case 3: if (b==0x08) state=eMatchingMTS; break; // no extended device IDs have byte 2 set to 0x08, so this is a safe check for MTS message
+                    default: state=eIgnoring; break;    // it's not an MTS message
+                }
+                break;
+            case eMatchingMTS:
+                sysex_ctr=0;
+                ret=true;   // assume we've got a valid MTS message
+                switch (b)
+                {
+                    case 0: format=eRequest,state=eMatchingProg; break;
+                    case 1: format=eBulk,state=eMatchingProg; break;
+                    case 2: format=eSingle,state=eMatchingProg; break;
+                    case 3: format=eRequest,state=eMatchingBank; break;
+                    case 4: format=eBulk,state=eMatchingBank; break;
+                    case 5: format=eScaleOctOneByte,state=eMatchingBank; break;
+                    case 6: format=eScaleOctTwoByte,state=eMatchingBank; break;
+                    case 7: format=eSingle,state=eMatchingBank; break;
+                    case 8: format=eScaleOctOneByteExt,state=eMatchingChannel; break;
+                    case 9: format=eScaleOctTwoByteExt,state=eMatchingChannel; break;
+                    default: state=eIgnoring; break;    // it's not a valid MTS format
+                }
+                break;
+            case eMatchingBank:
+                bank=b;
+                state=eMatchingProg;
+                break;
+            case eMatchingProg:
+                prog=b;
+                if (format==eSingle) state=eNumTunings;else state=eTuningName;//,tuningName.clear();
+                break;
+            case eTuningName:
+//                tuningName.push_back(b);
+                if (++sysex_ctr>=16) sysex_ctr=0,state=eTuningData;
+                break;
+            case eNumTunings:
+                numTunings=b,sysex_ctr=0,state=eTuningData;
+                break;
+            case eMatchingChannel:
+                switch (sysex_ctr++)
+                {
+                    case 0: for (int i=14;i<16;i++) channelBitmap|=(1<<i); break;
+                    case 1: for (int i=7;i<14;i++) channelBitmap|=(1<<i); break;
+                    case 2: for (int i=0;i<7;i++) channelBitmap|=(1<<i); sysex_ctr=0,state=eTuningData; break;
+                }
+                break;
+            case eTuningData:
+                switch (format)
+                {
+                    case eBulk:
+                        sysex_value=(sysex_value<<7)|(b&127);
+                        sysex_ctr++;
+                        if ((sysex_ctr&3)==3)
+                        {
+                            retuneNote(note,(sysex_value>>14)&127,(sysex_value&16383)/16383.f);
+                            sysex_value=0;sysex_ctr++;
+                            if (++note>=128) state=eCheckSum;
+                        }
+                        break;
+                    case eSingle:
+                        sysex_value=(sysex_value<<7)|(b&127);
+                        sysex_ctr++;
+                        if (!(sysex_ctr&3))
+                        {
+                            retuneNote((sysex_value>>21)&127,(sysex_value>>14)&127,(sysex_value&16383)/16383.f);
+                            sysex_value=0;
+                            if (++note>=numTunings) state=eIgnoring;
+                        }
+                        break;
+                    case eScaleOctOneByte: case eScaleOctOneByteExt:
+                        for (int i=sysex_ctr;i<128;i+=12) retuneNote(i,i,(signed char)b);
+                        if (++sysex_ctr>=12) state=format==eScaleOctOneByte?eCheckSum:eIgnoring;
+                        break;
+                    case eScaleOctTwoByte: case eScaleOctTwoByteExt:
+                        sysex_value=(sysex_value<<7)|(b&127);
+                        sysex_ctr++;
+                        if (!(sysex_ctr&1))
+                        {
+                            float detune=100.f*((sysex_value&16383)-8192.f)/(sysex_value>8192.f?8191.f:8192.f);
+                            for (int i=note;i<128;i+=12) retuneNote(i,i,detune);
+                            if (++note>=12) state=format==eScaleOctTwoByte?eCheckSum:eIgnoring;
+                        }
+                        break;
+                    default: state=eIgnoring; break;
+                }
+                break;
+            case eCheckSum:
+                checksum=b;
+                state=eIgnoring;
+                break;
+        }
+    }
+    return ret;
+}
+
+void Synth::retuneNote(int note,int retuneNote,float detune) {
+    if (note<0 || note>127 || retuneNote<0 || retuneNote>127) return;
+    frequency[note]=440.f*pow(2.f,((retuneNote+detune)-69.f)/12.f);
 }
 
 

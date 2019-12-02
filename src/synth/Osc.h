@@ -50,7 +50,8 @@ public:
     void newNote(struct OscState* oscState, int note);
     void glideToNote(struct OscState* oscState, int note);
     void glideStep(struct OscState* oscState, float phase);
-
+    void updateTuning(struct OscState* oscState, int note, int nextGlidingNote);
+    
     inline void calculateFrequencyWithMatrix(struct OscState *oscState, Matrix* matrix, float expHarm) {
         oscState->mainFrequencyPlusMatrix = oscState->mainFrequency;
         oscState->mainFrequencyPlusMatrix *= expHarm;

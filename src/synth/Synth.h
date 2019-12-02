@@ -29,6 +29,9 @@
 
 #define UINT_MAX  4294967295
 
+enum eSysexState {eIgnoring=0,eMatchingSysex,eSysexValid,eMatchingMTS,eMatchingBank,eMatchingProg,eMatchingChannel,eTuningName,eNumTunings,eTuningData,eCheckSum};
+enum eMTSFormat {eRequest=0,eBulk,eSingle,eScaleOctOneByte,eScaleOctTwoByte,eScaleOctOneByteExt,eScaleOctTwoByteExt};
+
 class Synth : public SynthParamListener, public SynthStateAware, public SynthParamChecker
 {
 public:
@@ -154,6 +157,8 @@ public:
 
     void setScalaEnable(bool enable);
     void setScalaScale(int scaleNumber);
+    
+    bool analyseSysexBuffer(uint8_t *buffer,int len);
 
     void setCurrentInstrument(int value);
 
@@ -166,6 +171,9 @@ public:
 private:
     // Called by setSynthState
     void init();
+    
+    bool decodeBufferAndApplyTuning(const unsigned char *buffer,int len);
+    void retuneNote(int note,int retuneNote,float detune);
 
     float ratioTimbre;
     float ratioTimbreLP;
@@ -181,8 +189,8 @@ private:
 
     // gate
     float currentGate;
-
-};
+    
+ };
 
 
 

@@ -345,6 +345,19 @@ public:
             break;
         }
     }
+    
+    void updateOscillatorTunings()
+    {
+        if (this->playing)
+        {
+            currentTimbre->osc1.updateTuning(&oscState1,this->note,this->gliding?this->nextGlidingNote:-1);
+            currentTimbre->osc2.updateTuning(&oscState2,this->note,this->gliding?this->nextGlidingNote:-1);
+            currentTimbre->osc3.updateTuning(&oscState3,this->note,this->gliding?this->nextGlidingNote:-1);
+            currentTimbre->osc4.updateTuning(&oscState4,this->note,this->gliding?this->nextGlidingNote:-1);
+            currentTimbre->osc5.updateTuning(&oscState5,this->note,this->gliding?this->nextGlidingNote:-1);
+            currentTimbre->osc6.updateTuning(&oscState6,this->note,this->gliding?this->nextGlidingNote:-1);
+        }
+    }
 
 
 private:
