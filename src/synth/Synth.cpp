@@ -577,8 +577,8 @@ bool Synth::analyseSysexBuffer(uint8_t *buffer,int len) {
         for (int i=0;i<8;i++) updatedNotes[i]=0;
         if (decodeBufferAndApplyTuning(buffer, len, this->updatedNotes)) {
             for (int i=0;i<MAX_NUMBER_OF_VOICES;i++) voices[i].updateOscillatorTunings(this->updatedNotes);
-            return true;
         }
+        return true;
     }
     return false;
 }
