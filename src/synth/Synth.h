@@ -173,7 +173,7 @@ private:
     void init();
     
     bool decodeBufferAndApplyTuning(const unsigned char *buffer,int len,unsigned char *updatedNotes);
-    void retuneNote(int note,int retuneNote,float detune);
+    bool retuneNote(char note,char retuneNote,float detune);
 
     float ratioTimbre;
     float ratioTimbreLP;

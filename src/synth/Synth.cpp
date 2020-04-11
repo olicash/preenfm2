@@ -573,7 +573,7 @@ void Synth::setCurrentInstrument(int value) {
 
 bool Synth::analyseSysexBuffer(uint8_t *buffer,int len) {
     
-    if (buffer[0]!=0x7d && (buffer[0]==0x7e || buffer[0]==0x7f)){
+    if (buffer[0]!=0x7d && (buffer[0]==0x7e || buffer[0]==0x7f)) {
         for (int i=0;i<8;i++) updatedNotes[i]=0;
         if (decodeBufferAndApplyTuning(buffer, len, this->updatedNotes)) {
             for (int i=0;i<MAX_NUMBER_OF_VOICES;i++) voices[i].updateOscillatorTunings(this->updatedNotes);
@@ -583,6 +583,7 @@ bool Synth::analyseSysexBuffer(uint8_t *buffer,int len) {
     return false;
 }
 
+// returns true if frequency of any notes have changed
 bool Synth::decodeBufferAndApplyTuning(const unsigned char *buffer,int len,unsigned char *updatedNotes) {
     bool ret=false;
     int sysex_ctr=0,sysex_value=0,note=0,numTunings=0;
@@ -613,7 +614,7 @@ bool Synth::decodeBufferAndApplyTuning(const unsigned char *buffer,int len,unsig
                 break;
             case eMatchingMTS:
                 sysex_ctr=0;
-                ret=true;   // assume we've got a valid MTS message
+                // ret=true;   // assume we've got a valid MTS message
                 switch (b)
                 {
                     case 0: format=eRequest,state=eMatchingProg; break;
@@ -642,7 +643,7 @@ bool Synth::decodeBufferAndApplyTuning(const unsigned char *buffer,int len,unsig
                 if (++sysex_ctr>=16) sysex_ctr=0,state=eTuningData;
                 break;
             case eNumTunings:
-                numTunings=b,sysex_ctr=0,state=eTuningData;
+                numTunings=b&127,sysex_ctr=0,state=eTuningData;
                 break;
             case eMatchingChannel:
                 switch (sysex_ctr++)
@@ -660,7 +661,7 @@ bool Synth::decodeBufferAndApplyTuning(const unsigned char *buffer,int len,unsig
                         sysex_ctr++;
                         if ((sysex_ctr&3)==3)
                         {
-                            retuneNote(note,(sysex_value>>14)&127,(sysex_value&16383)/16383.f);
+                            if (retuneNote(note,(sysex_value>>14)&127,(sysex_value&16383)/16383.f)) {updatedNotes[note/8]|=1<<(note%8);ret=true;}
                             sysex_value=0;sysex_ctr++;
                             if (++note>=128) state=eCheckSum;
                         }
@@ -671,14 +672,13 @@ bool Synth::decodeBufferAndApplyTuning(const unsigned char *buffer,int len,unsig
                         if (!(sysex_ctr&3))
                         {
                             char n=(sysex_value>>21)&127;
-                            updatedNotes[n/8]|=1<<(n%8);
-                            retuneNote(n,(sysex_value>>14)&127,(sysex_value&16383)/16383.f);
+                            if (retuneNote(n,(sysex_value>>14)&127,(sysex_value&16383)/16383.f)) {updatedNotes[n/8]|=1<<(n%8);ret=true;}
                             sysex_value=0;
                             if (++note>=numTunings) state=eIgnoring;
                         }
                         break;
                     case eScaleOctOneByte: case eScaleOctOneByteExt:
-                        for (int i=sysex_ctr;i<128;i+=12) retuneNote(i,i,(signed char)b);
+                            for (int i=sysex_ctr;i<128;i+=12) if (retuneNote(i,i,(signed char)b)) {updatedNotes[i/8]|=1<<(i%8);ret=true;}
                         if (++sysex_ctr>=12) state=format==eScaleOctOneByte?eCheckSum:eIgnoring;
                         break;
                     case eScaleOctTwoByte: case eScaleOctTwoByteExt:
@@ -687,7 +687,7 @@ bool Synth::decodeBufferAndApplyTuning(const unsigned char *buffer,int len,unsig
                         if (!(sysex_ctr&1))
                         {
                             float detune=100.f*((sysex_value&16383)-8192.f)/(sysex_value>8192.f?8191.f:8192.f);
-                            for (int i=note;i<128;i+=12) retuneNote(i,i,detune);
+                            for (int i=note;i<128;i+=12) if (retuneNote(i,i,detune)) {updatedNotes[i/8]|=1<<(i%8);ret=true;}
                             if (++note>=12) state=format==eScaleOctTwoByte?eCheckSum:eIgnoring;
                         }
                         break;
@@ -700,13 +700,13 @@ bool Synth::decodeBufferAndApplyTuning(const unsigned char *buffer,int len,unsig
                 break;
         }
     }
-    if (format!=eSingle) for (int i=0;i<8;i++) updatedNotes[i]=0xFF;
     return ret;
 }
 
-void Synth::retuneNote(int note,int retuneNote,float detune) {
-    if (note<0 || note>127 || retuneNote<0 || retuneNote>127) return;
+bool Synth::retuneNote(char note,char retuneNote,float detune) {
+    float old=frequency[note];
     frequency[note]=440.f*pow(2.f,((retuneNote+detune)-69.f)/12.f);
+    return old!=frequency[note];
 }
 
 
