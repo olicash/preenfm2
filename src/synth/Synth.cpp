@@ -572,14 +572,18 @@ void Synth::setCurrentInstrument(int value) {
 }
 
 bool Synth::analyseSysexBuffer(uint8_t *buffer,int len) {
-    if (buffer[0]!=0x7d && (buffer[0]==0x7e || buffer[0]==0x7f) && decodeBufferAndApplyTuning(buffer, len)) {
-        for (int i=0;i<MAX_NUMBER_OF_VOICES;i++) voices[i].updateOscillatorTunings();
-        return true;
+    
+    if (buffer[0]!=0x7d && (buffer[0]==0x7e || buffer[0]==0x7f)){
+        for (int i=0;i<8;i++) updatedNotes[i]=0;
+        if (decodeBufferAndApplyTuning(buffer, len, this->updatedNotes)) {
+            for (int i=0;i<MAX_NUMBER_OF_VOICES;i++) voices[i].updateOscillatorTunings(this->updatedNotes);
+            return true;
+        }
     }
     return false;
 }
 
-bool Synth::decodeBufferAndApplyTuning(const uint8_t *buffer,int len) {
+bool Synth::decodeBufferAndApplyTuning(const unsigned char *buffer,int len,unsigned char *updatedNotes) {
     bool ret=false;
     int sysex_ctr=0,sysex_value=0,note=0,numTunings=0;
     int bank=-1,prog=0,checksum=0;short int channelBitmap=0;   // maybe we'll want to use these at some point
@@ -666,7 +670,9 @@ bool Synth::decodeBufferAndApplyTuning(const uint8_t *buffer,int len) {
                         sysex_ctr++;
                         if (!(sysex_ctr&3))
                         {
-                            retuneNote((sysex_value>>21)&127,(sysex_value>>14)&127,(sysex_value&16383)/16383.f);
+                            char n=(sysex_value>>21)&127;
+                            updatedNotes[n/8]|=1<<(n%8);
+                            retuneNote(n,(sysex_value>>14)&127,(sysex_value&16383)/16383.f);
                             sysex_value=0;
                             if (++note>=numTunings) state=eIgnoring;
                         }
@@ -694,6 +700,7 @@ bool Synth::decodeBufferAndApplyTuning(const uint8_t *buffer,int len) {
                 break;
         }
     }
+    if (format!=eSingle) for (int i=0;i<8;i++) updatedNotes[i]=0xFF;
     return ret;
 }
 

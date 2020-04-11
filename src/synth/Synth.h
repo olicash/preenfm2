@@ -172,7 +172,7 @@ private:
     // Called by setSynthState
     void init();
     
-    bool decodeBufferAndApplyTuning(const unsigned char *buffer,int len);
+    bool decodeBufferAndApplyTuning(const unsigned char *buffer,int len,unsigned char *updatedNotes);
     void retuneNote(int note,int retuneNote,float detune);
 
     float ratioTimbre;
@@ -189,6 +189,8 @@ private:
 
     // gate
     float currentGate;
+    
+    unsigned char updatedNotes[8];
     
  };
 
