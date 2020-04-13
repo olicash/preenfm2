@@ -41,7 +41,7 @@ extern LiquidCrystal lcd;
 extern Synth synth;
 extern SynthState         synthState;
 extern MidiDecoder        midiDecoder;
-extern RingBuffer<uint8_t, 200> usartBufferIn;
+extern RingBuffer<uint8_t, 1023> usartBufferIn;
 extern RingBuffer<uint8_t, 100> usartBufferOut;
 
 extern USB_OTG_CORE_HANDLE  usbOTGHost;

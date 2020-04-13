@@ -21,7 +21,7 @@
 #include "LiquidCrystal.h"
 extern LiquidCrystal lcd;
 
-RingBuffer<uint8_t, 200> usartBufferIn  __attribute__ ((section(".ccmnoload")));
+RingBuffer<uint8_t, 1023> usartBufferIn  __attribute__ ((section(".ccmnoload")));
 RingBuffer<uint8_t, 100> usartBufferOut  __attribute__ ((section(".ccmnoload")));
 unsigned int preenTimer  __attribute__ ((section(".ccm"))) = 0;
 
