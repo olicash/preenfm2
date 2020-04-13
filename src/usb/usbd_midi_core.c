@@ -268,13 +268,13 @@ static uint8_t usbd_midi_DataOut(void *pdev, uint8_t epnum) {
 				break;
 			// ========= 1 byte =======================
 			case 0xF:
-				usartBufferIn.insert(usbMidiBuffRead[usbr+1]);
 				if (synthState.fullState.midiConfigValue[MIDICONFIG_THROUGH] == 1) {
 					usartBufferOut.insert(usbMidiBuffRead[usbr+1]);
 			    	USART_ITConfig(USART3, USART_IT_TXE, ENABLE);
 			    }
 			// Sysex - No thru
 			case 0x5:
+                usartBufferIn.insert(usbMidiBuffRead[usbr+1]);
 				break;
 			}
 		}
