@@ -289,6 +289,22 @@ void LiquidCrystal::print(const char str[]) {
     }
 }
 
+const char hexChars[16]={'0','1','2','3','4','5','6','7','8','9','A','B','C','D','E','F'};
+
+void LiquidCrystal::printHex(char c) {
+    char hexString[2];
+    hexString[0]=hexChars[(c>>4)&0xf];
+    hexString[1]=hexChars[c&0xf];
+    print(hexString);
+}
+
+void LiquidCrystal::printHex(unsigned char c) {
+    char hexString[2];
+    hexString[0]=hexChars[(c>>4)&0xf];
+    hexString[1]=hexChars[c&0xf];
+    print(hexString);
+}
+
 void LiquidCrystal::print(int n) {
 	unsigned char buf[12];
 	unsigned long i = 0;

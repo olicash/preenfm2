@@ -96,6 +96,8 @@ public:
   // copied from Print
   void write(unsigned char);
   void print(char c);
+  void printHex(char c);
+  void printHex(unsigned char c);
   void print(const char str[]);
   void print(int n);
   void print(unsigned int n);
