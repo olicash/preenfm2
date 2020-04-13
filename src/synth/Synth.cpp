@@ -678,7 +678,7 @@ bool Synth::decodeBufferAndApplyTuning(const unsigned char *buffer,int len,unsig
                         }
                         break;
                     case eScaleOctOneByte: case eScaleOctOneByteExt:
-                            for (int i=sysex_ctr;i<128;i+=12) if (retuneNote(i,i,(signed char)b)) {updatedNotes[i>>3]|=1<<(i&7);ret=true;}
+                        for (int i=sysex_ctr;i<128;i+=12) if (retuneNote(i,i,(signed char)b)) {updatedNotes[i>>3]|=1<<(i&7);ret=true;}
                         if (++sysex_ctr>=12) state=format==eScaleOctOneByte?eCheckSum:eIgnoring;
                         break;
                     case eScaleOctTwoByte: case eScaleOctTwoByteExt:
