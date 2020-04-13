@@ -574,7 +574,7 @@ void Synth::setCurrentInstrument(int value) {
 bool Synth::analyseSysexBuffer(uint8_t *buffer,int len) {
     
     if (buffer[0]!=0x7d && (buffer[0]==0x7e || buffer[0]==0x7f)) {
-        for (int i=0;i<8;i++) updatedNotes[i]=0;
+        for (int i=0;i<16;i++) updatedNotes[i]=0;
         if (decodeBufferAndApplyTuning(buffer, len, this->updatedNotes)) {
             for (int i=0;i<MAX_NUMBER_OF_VOICES;i++) voices[i].updateOscillatorTunings(this->updatedNotes);
         }
@@ -661,7 +661,7 @@ bool Synth::decodeBufferAndApplyTuning(const unsigned char *buffer,int len,unsig
                         sysex_ctr++;
                         if ((sysex_ctr&3)==3)
                         {
-                            if (retuneNote(note,(sysex_value>>14)&127,(sysex_value&16383)/16383.f)) {updatedNotes[note/8]|=1<<(note%8);ret=true;}
+                            if (retuneNote(note,(sysex_value>>14)&127,(sysex_value&16383)/16383.f)) {updatedNotes[note/16]|=1<<(note%8);ret=true;}
                             sysex_value=0;sysex_ctr++;
                             if (++note>=128) state=eCheckSum;
                         }
@@ -672,13 +672,13 @@ bool Synth::decodeBufferAndApplyTuning(const unsigned char *buffer,int len,unsig
                         if (!(sysex_ctr&3))
                         {
                             char n=(sysex_value>>21)&127;
-                            if (retuneNote(n,(sysex_value>>14)&127,(sysex_value&16383)/16383.f)) {updatedNotes[n/8]|=1<<(n%8);ret=true;}
+                            if (retuneNote(n,(sysex_value>>14)&127,(sysex_value&16383)/16383.f)) {updatedNotes[n/16]|=1<<(n%8);ret=true;}
                             sysex_value=0;
                             if (++note>=numTunings) state=eIgnoring;
                         }
                         break;
                     case eScaleOctOneByte: case eScaleOctOneByteExt:
-                            for (int i=sysex_ctr;i<128;i+=12) if (retuneNote(i,i,(signed char)b)) {updatedNotes[i/8]|=1<<(i%8);ret=true;}
+                            for (int i=sysex_ctr;i<128;i+=12) if (retuneNote(i,i,(signed char)b)) {updatedNotes[i/16]|=1<<(i%8);ret=true;}
                         if (++sysex_ctr>=12) state=format==eScaleOctOneByte?eCheckSum:eIgnoring;
                         break;
                     case eScaleOctTwoByte: case eScaleOctTwoByteExt:
@@ -687,7 +687,7 @@ bool Synth::decodeBufferAndApplyTuning(const unsigned char *buffer,int len,unsig
                         if (!(sysex_ctr&1))
                         {
                             float detune=100.f*((sysex_value&16383)-8192.f)/(sysex_value>8192.f?8191.f:8192.f);
-                            for (int i=note;i<128;i+=12) if (retuneNote(i,i,detune)) {updatedNotes[i/8]|=1<<(i%8);ret=true;}
+                            for (int i=note;i<128;i+=12) if (retuneNote(i,i,detune)) {updatedNotes[i/16]|=1<<(i%8);ret=true;}
                             if (++note>=12) state=format==eScaleOctTwoByte?eCheckSum:eIgnoring;
                         }
                         break;

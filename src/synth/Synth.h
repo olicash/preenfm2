@@ -190,7 +190,7 @@ private:
     // gate
     float currentGate;
     
-    unsigned char updatedNotes[8];
+    unsigned char updatedNotes[16];
     
  };
 

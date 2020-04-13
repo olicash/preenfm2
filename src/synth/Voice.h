@@ -348,7 +348,7 @@ public:
     
     void updateOscillatorTunings(unsigned char *updatedNotes)
     {
-        if (this->playing && (updatedNotes[this->note/8]&(1<<(this->note%8)) || updatedNotes[this->nextGlidingNote/8]&(1<<(this->nextGlidingNote%8))))
+        if (this->playing && (updatedNotes[this->note/16]&(1<<(this->note%8)) || updatedNotes[this->nextGlidingNote/16]&(1<<(this->nextGlidingNote%8))))
         {
             currentTimbre->osc1.updateTuning(&oscState1,this->note,this->gliding?this->nextGlidingNote:-1);
             currentTimbre->osc2.updateTuning(&oscState2,this->note,this->gliding?this->nextGlidingNote:-1);
