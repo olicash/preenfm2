@@ -45,9 +45,13 @@ public:
     Osc() {};
     virtual ~Osc() {};
 
-    void init(struct OscillatorParams *oscParams, DestinationEnum df);
+    void init(SynthState* sState, struct OscillatorParams *oscParams, DestinationEnum df);
 
     void newNote(struct OscState* oscState, int note);
+#ifdef CVIN
+    void newNoteFromCv(struct OscState* oscState, float freq);
+    void updateFreqFromCv(struct OscState* oscState, float freq);
+#endif
     void glideToNote(struct OscState* oscState, int note);
     void glideStep(struct OscState* oscState, float phase);
     void updateTuning(struct OscState* oscState, int note, int nextGlidingNote);
@@ -208,6 +212,9 @@ public:
     	return oscValuesToFill;
     };
 
+    Matrix *getMatrix() {
+        return matrix;
+    }
 private:
     DestinationEnum destFreq;
     Matrix* matrix;

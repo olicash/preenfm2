@@ -44,7 +44,7 @@ struct ParameterRowDisplay engine1ParameterRow  = {
                 {ALGO1, ALGO_END-1, ALGO_END, DISPLAY_TYPE_STRINGS, algoNames, nullNamesOrder, nullNamesOrder},
                 {0, 16, 17, DISPLAY_TYPE_INT, nullNames,nullNamesOrder, nullNamesOrder },
                 {0, 16, 17, DISPLAY_TYPE_VOICES, nullNames, nullNamesOrder, nullNamesOrder },
-                {0, 10, 11, DISPLAY_TYPE_INT, nullNames, nullNamesOrder, nullNamesOrder }
+                {0, 12, 13, DISPLAY_TYPE_INT, nullNames, nullNamesOrder, nullNamesOrder }
         }
 };
 
@@ -165,13 +165,132 @@ struct ParameterRowDisplay engineMix3ParameterRow = {
 };
 
 
-const char* fxName []=  { "Off ", "Mix ", "LP  ", "HP  ", "Bass", "BP  ", "Crsh" } ;
+/* FILTER ORDER
+
+0	Off , -0-
+1	Mix , -1-
+2	LP  , -2-
+3	HP  , -3-
+4	Bass, -4-
+5	BP  , -5-
+6	Crsh, -6-
+7	Oryx, -38-
+8	Orx2, -39-
+9	Orx3, -40-
+10	h3o+, -46-
+11	Svh3, -47-
+12	Pann, -22-
+13	LP2 , -7-
+14	HP2 , -8-
+15	Lp3 , -10-
+16	Hp3 , -11-
+17	Bp3 , -12-
+18	Peak, -13-
+19	Notc, -14-
+20	Bell, -15-
+21	LowS, -16-
+22	HigS, -17-
+23	LpHp, -18-
+24	BpDs, -19-
+25	LPws, -20-
+26	Tilt, -21-
+27	Sat , -23-
+28	Sigm, -24-
+29	Fold, -25-
+30	Wrap, -26-
+31	LpSn, -32-
+32	HpSn, -33-
+33	Not4, -34-
+34	Ap4 , -35-
+35	Ap4b, -36-
+36	Ap4D, -37-
+37	18db, -41-
+38	La+d, -42-
+39	BP2 , -9-
+40	Lad+, -43-
+41	Diod, -44-
+42	L+d+, -45-
+43	Xor , -27-
+44	Txr1, -28-
+45	Txr2, -29-
+46	LPx1, -30-
+47	LPx2, -31-
+48	Alkx, -48-
+*/
+
+const unsigned char  filtersOrder[] = { 
+    0,1,2,3,4,5,6,38,39,40,
+    46,47,22,7,8,10,11,12,13,14,
+    15,16,17,18,19,20,21,23,24,25,
+    26,32,33,34,35,36,37,41,42,9,
+    43,44,45,27,28,29,30,31,48 
+};
+
+const unsigned char  filtersPosition[] =  {
+    0,1,2,3,4,5,6,13,14,39,
+    15,16,17,18,19,20,21,22,23,24,
+    25,26,12,27,28,29,30,43,44,45,
+    46,47,31,32,33,34,35,36,7,8,
+    9,37,38,40,41,42,10,11,48
+};
+
+const char *fxName[] = {
+    "Off ", /*	0	*/
+    "Mix ", /*	1	*/
+    "LP  ", /*	2	*/
+    "HP  ", /*	3	*/
+    "Bass", /*	4	*/
+    "BP  ", /*	5	*/
+    "Crsh", /*	6	*/
+    "LP2 ", /*	7	*/
+    "HP2 ", /*	8	*/
+    "BP2 ", /*	9	*/
+    "Lp3 ", /*	10	*/
+    "Hp3 ", /*	11	*/
+    "Bp3 ", /*	12	*/
+    "Peak", /*	13	*/
+    "Notc", /*	14	*/
+    "Bell", /*	15	*/
+    "LowS", /*	16	*/
+    "HigS", /*	17	*/
+    "LpHp", /*	18	*/
+    "BpDs", /*	19	*/
+    "LPws", /*	20	*/
+    "Tilt", /*	21	*/
+    "Pann", /*	22	*/
+    "Sat ", /*	23	*/
+    "Sigm", /*	24	*/
+    "Fold", /*	25	*/
+    "Wrap", /*	26	*/
+    "Rot ", /*	27	*/
+    "Txr1", /*	28	*/
+    "Txr2", /*	29	*/
+    "LPx1", /*	30	*/
+    "LPx2", /*	31	*/
+    "LpSn", /*	32	*/
+    "HpSn", /*	33	*/
+    "Not4", /*	34	*/
+    "Ap4 ", /*	35	*/
+    "Ap4b", /*	36	*/
+    "Ap4D", /*	37	*/
+    "Oryx", /*	38	*/
+    "Orx2", /*	39	*/
+    "Orx3", /*	40	*/
+    "18db", /*	41	*/
+    "La+d", /*	42	*/
+    "Lad+", /*	43	*/
+    "Diod", /*	44	*/
+    "L+d+", /*	45	*/
+    "h3o+", /*	46	*/
+    "Svh3", /*	47	*/
+    "Alkx", /*	48	*/
+};                        
 
 struct ParameterRowDisplay effectParameterRow = {
         "Filter" ,
         { "Type", "    ", "    ", "Gain" },
         {
-                {0, FILTER_LAST - 1, FILTER_LAST, DISPLAY_TYPE_STRINGS, fxName, nullNamesOrder, nullNamesOrder },
+                {0, FILTER_LAST - 1, FILTER_LAST, DISPLAY_TYPE_STRINGS, fxName, filtersOrder, filtersPosition },
                 {0, 1, 101, DISPLAY_TYPE_FLOAT, nullNames, nullNamesOrder, nullNamesOrder },
                 {0, 1, 101, DISPLAY_TYPE_FLOAT, nullNames, nullNamesOrder, nullNamesOrder },
                 {0, 2, 201, DISPLAY_TYPE_FLOAT, nullNames, nullNamesOrder, nullNamesOrder }
@@ -186,6 +305,48 @@ struct FilterRowDisplay filterRowDisplay[FILTER_LAST] = {
         { "LoFr", "Boos", "Gain" },
         { "Freq", "Q   ", "Gain" },
         { "Samp", "Bits", "Gain" },
+        { "Freq", "Res ", "Gain" },
+        { "Freq", "Res ", "Gain" },
+        { "Freq", "Q   ", "Gain" },
+        { "Freq", "Res ", "Gain" },
+        { "Freq", "Res ", "Gain" },
+        { "Freq", "Res ", "Gain" },
+        { "Freq", "Res ", "Gain" },
+        { "Freq", "Res ", "Gain" },
+        { "Freq", "Amp ", "Gain" },
+        { "Freq", "Amp ", "Gain" },
+        { "Freq", "Amp ", "Gain" },
+        { "Freq", "Res ", "Gain" },        
+        { "Freq", "Res ", "Gain" },
+        { "Freq", "Mix ", "Gain" },
+        { "Freq", "Mod ", "Gain" },
+        { "Pos ", "Sprd", "Gain" },
+        { "Thrs", "Tone", "Gain" },
+        { "Driv", "Tone", "Gain" },
+        { "Driv", "Tone", "Gain" },
+        { "Driv", "Tone", "Gain" },
+        { "angl", "smpr", "Gain" },
+        { "Smp1", "Smp2", "Gain" },
+        { "Smp1", "Smp2", "Gain" },
+        { "Freq", "Fold", "Gain" },
+        { "Freq", "Fold", "Gain" },
+        { "Pos ", "Freq", "Gain" },
+        { "Pos ", "Freq", "Gain" },
+        { "Freq", "Sprd", "Gain" },
+        { "Freq", "Sprd", "Gain" },
+        { "Freq", "Sprd", "Gain" },
+        { "Freq", "Sprd", "Gain" },
+        { "Vowl", "Tone", "Gain" },
+        { "Vowl", "Tone", "Gain" },
+        { "Vowl", "Tone", "Gain" },
+        { "Freq", "Res ", "Gain" },
+        { "Freq", "Res ", "Gain" },
+        { "Freq", "Res ", "Gain" },
+        { "Freq", "Res ", "Gain" },
+        { "Freq", "Res ", "Gain" },
+        { "Freq", "Res ", "Gain" },
+        { "Freq", "Res ", "Gain" },
+        { "Smp1", "Smp2", "Gain" }
 };
 
 
@@ -257,9 +418,20 @@ struct ParameterRowDisplay lfoEnv2ParameterRow = {
 };
 
 const char* matrixSourceNames [] = { "None", "lfo1", "lfo2", "lfo3", "env1", "env2", "seq1", "seq2",
-        "ModW", "PitB", "AftT",  "Velo", "Not1", "p1  ", "p2  ", "p3  ", "p4  ", "Not2", "Brth" } ;
-const unsigned char  matrixSourceOrder[] =        { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 17, 18, 13, 14, 15, 16 };
-const unsigned char  matrixSourcePosition[] =     { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 15, 16, 17, 18, 13, 14};
+        "ModW", "PitB", "AftT",  "Velo", "Not1", "p1  ", "p2  ", "p3  ", "p4  ", "Not2", "Brth"
+#ifdef CVIN
+        , "CV1 ", "CV2 ", "CV3 ", "CV4 "
+#endif
+    , "CC74", "rndK"
+};
+
+#ifdef CVIN
+const unsigned char  matrixSourceOrder[] =        { 0, 19, 20, 21, 22, 1, 2,  3,  4,  5,  6,  7,  8,  9,  10, 11, 12, 17, 18, 13, 14, 15, 16, 23, 24};
+const unsigned char  matrixSourcePosition[] =     { 0,  5,  6,  7,  8, 9, 10, 11, 12, 13, 14, 15, 16, 19, 20, 21, 22, 17, 18, 1,  2,  3,  4, 23, 24};
+#else
+const unsigned char  matrixSourceOrder[] =        { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 17, 18, 13, 14, 15, 16, 19, 20};
+const unsigned char  matrixSourcePosition[] =     { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 15, 16, 17, 18, 13, 14, 19, 20};
+#endif
 
 
 const char* matrixDestNames [] = {
@@ -272,23 +444,23 @@ const char* matrixDestNames [] = {
         /*36*/ "l1Fq", "l2Fq", "l3Fq", "e2si", "s1ga", "s2ga",
         /*42*/ "Fltr",
         /*43*/ "o*Fh", "DecC",
-        /*45*/ "AttM", "DecM", "RelM"
+        /*45*/ "AttM", "DecM", "RelM", "sq1S", "sq2S"
 
 } ;
-const unsigned char  matrixTargetOrder[] =        { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 43, 24, 25, 26, 27, 28, 29, 30, 45, 44, 46, 31, 47, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42 };
+const unsigned char  matrixTargetOrder[] =        { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 43, 24, 25, 26, 27, 28, 29, 30, 45, 44, 46, 31, 47, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 48, 49 };
 //   Order                                        { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44 };
-const unsigned char  matrixTargetPosition[] =     { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 25, 26, 27, 28, 29, 30, 31, 35, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 24, 33, 32, 34, 36 };
+const unsigned char  matrixTargetPosition[] =     { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 25, 26, 27, 28, 29, 30, 31, 35, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 24, 33, 32, 34, 36, 48, 49 };
 
 
 struct ParameterRowDisplay matrixParameterRow = {
         "Matrix",
-        { "Srce", "Mult", "Dest", "    " },
+        { "Srce", "Mult", "Dst1", "Dst2" },
         {
                 { MATRIX_SOURCE_NONE, MATRIX_SOURCE_MAX-1, MATRIX_SOURCE_MAX, DISPLAY_TYPE_STRINGS, matrixSourceNames, matrixSourceOrder, matrixSourcePosition},
                 { -10, 10, 2001, DISPLAY_TYPE_FLOAT, nullNames, nullNamesOrder, nullNamesOrder },
                 // We removed 8 destination target in firmware 2.0
                 { DESTINATION_NONE, DESTINATION_MAX -1, DESTINATION_MAX, DISPLAY_TYPE_STRINGS, matrixDestNames, matrixTargetOrder, matrixTargetPosition},
-                { 0, 0, 0, DISPLAY_TYPE_NONE, nullNames, nullNamesOrder, nullNamesOrder }
+                { DESTINATION_NONE, DESTINATION_MAX -1, DESTINATION_MAX, DISPLAY_TYPE_STRINGS, matrixDestNames, matrixTargetOrder, matrixTargetPosition}
         }
 };
 
@@ -315,7 +487,7 @@ struct ParameterRowDisplay lfoStepParameterRow = {
         "Step Seq",
         { "Bpm ", "Gate", "    ", "    " },
         {
-                { 10 ,245, 236, DISPLAY_TYPE_STEP_SEQ_BPM, nullNames, nullNamesOrder, nullNamesOrder},
+                { 0 ,245, 246, DISPLAY_TYPE_STEP_SEQ_BPM, nullNames, nullNamesOrder, nullNamesOrder},
                 { 0 , 1, 101, DISPLAY_TYPE_FLOAT, nullNames, nullNamesOrder, nullNamesOrder},
                 { 0, 0, 0, DISPLAY_TYPE_STEP_SEQ1, nullNames, nullNamesOrder, nullNamesOrder },
                 { 0, 0, 0, DISPLAY_TYPE_STEP_SEQ2, nullNames, nullNamesOrder, nullNamesOrder }
@@ -456,6 +628,12 @@ SynthState::SynthState() {
     fullState.saveWhat = 0;
     fullState.toolsWhat = 0;
     fullState.scalaWhat = 0;
+#ifdef CVIN
+    fullState.midiConfigValue[MIDICONFIG_CVIN1_2] = 1;
+    fullState.midiConfigValue[MIDICONFIG_CVIN_A2] = 256;
+    fullState.midiConfigValue[MIDICONFIG_CVIN_A6] = 737;
+    fullState.midiConfigValue[MIDICONFIG_CV_GATE] = 50;
+#endif
     fullState.midiConfigValue[MIDICONFIG_USB] = 2;
 	fullState.midiConfigValue[MIDICONFIG_GLOBAL] = 0;
 	fullState.midiConfigValue[MIDICONFIG_CURRENT_INSTRUMENT] = 0;
@@ -466,6 +644,8 @@ SynthState::SynthState() {
     fullState.midiConfigValue[MIDICONFIG_THROUGH] = 0;
     fullState.midiConfigValue[MIDICONFIG_RECEIVES] = 3;
     fullState.midiConfigValue[MIDICONFIG_SENDS] = 1;
+    fullState.midiConfigValue[MIDICONFIG_GLOBAL_TUNING] = 50;
+    fullState.globalTuning = 440.0f;
     fullState.midiConfigValue[MIDICONFIG_PROGRAM_CHANGE] = 1;
     fullState.midiConfigValue[MIDICONFIG_BOOT_START] = 0;
     fullState.midiConfigValue[MIDICONFIG_TEST_NOTE] = 60;
@@ -919,13 +1099,23 @@ void SynthState::encoderTurned(int encoder, int ticks) {
             // Must use newValue (int) so that the minValue comparaison works
             // Is there any other order than the default one
             int pos = param->valueNameOrderReversed[(int)(*value)];
-            if (ticks>0 && pos < param->maxValue) {
-                newValue = param->valueNameOrder[pos+1];
-            }
-            if (ticks<0 && pos>param->minValue) {
-                newValue = param->valueNameOrder[pos-1];
-            }
 
+            // Special Case for filter
+            if (unlikely(param->valueNameOrderReversed == filtersPosition)) {
+                if (ticks>0 && oldValue != FILTER_LADDER) {
+                    newValue = param->valueNameOrder[pos+1];
+                }
+                if (ticks<0 && pos>param->minValue) {
+                    newValue = param->valueNameOrder[pos-1];
+                }
+            } else {
+                if (ticks>0 && pos < param->maxValue) {
+                    newValue = param->valueNameOrder[pos+1];
+                }
+                if (ticks<0 && pos>param->minValue) {
+                    newValue = param->valueNameOrder[pos-1];
+                }
+            }
             (*value) = (float)newValue;
         }
         if (newValue != oldValue) {
@@ -1143,7 +1333,7 @@ void SynthState::setScalaEnable(bool enable) {
 
 void SynthState::setScalaScale(int scaleNumber) {
     fullState.scalaScaleConfig.scalaFile = storage->getScalaFile()->getFile(scaleNumber);
-    
+
     if (fullState.scalaScaleConfig.scalaFile->fileType != FILE_EMPTY && fullState.scalaScaleConfig.scalaEnabled) {
         storage->getScalaFile()->loadScalaScale(&fullState.scalaScaleConfig);
     }
@@ -1183,6 +1373,8 @@ void SynthState::loadPreenFMPatchFromMidi(int timbre, int bank, int bankLSB, int
     {
         PFM2File const *bank = storage->getPatchBank()->getFile(bankLSB);
         if (bank->fileType != FILE_EMPTY) {
+            fullState.preenFMBankNumber = bankLSB;
+            fullState.preenFMPresetNumber = patchNumber;
             loadPreenFMPatch(timbre, bank, patchNumber, params);
         }
     }
@@ -1191,6 +1383,8 @@ void SynthState::loadPreenFMPatchFromMidi(int timbre, int bank, int bankLSB, int
     {
         PFM2File const *bank = storage->getComboBank()->getFile(bankLSB);
         if (bank->fileType != FILE_EMPTY) {
+            fullState.preenFMComboNumber = bankLSB;
+            fullState.preenFMComboPresetNumber = patchNumber;
             loadPreenFMCombo(bank, patchNumber);
         }
     }
@@ -1201,7 +1395,9 @@ void SynthState::loadPreenFMPatchFromMidi(int timbre, int bank, int bankLSB, int
     {
         int dx7bank = bank - 2;
         PFM2File const *bank = storage->getDX7SysexFile()->getFile(bankLSB + dx7bank * 128);
-        if (bank->fileType != FILE_EMPTY) {
+        if (bank->fileType != FILE_EMPTY && patchNumber < 32) {
+            fullState.dx7BankNumber = bankLSB;
+            fullState.dx7PresetNumber = patchNumber;
             loadDx7Patch(timbre, bank, patchNumber, params);
         }
     }
@@ -2290,20 +2486,20 @@ void SynthState::randomizePreset() {
 
         params->matrixRowState10.source = MATRIX_SOURCE_MODWHEEL;
         params->matrixRowState10.mul = 2.0f;
-        params->matrixRowState10.destination = INDEX_ALL_MODULATION;
+        params->matrixRowState10.dest1 = INDEX_ALL_MODULATION;
 
         params->matrixRowState11.source = MATRIX_SOURCE_PITCHBEND;
         params->matrixRowState11.mul = 1.0f;
-        params->matrixRowState11.destination = ALL_OSC_FREQ;
+        params->matrixRowState11.dest1 = ALL_OSC_FREQ;
 
         params->matrixRowState12.source = MATRIX_SOURCE_AFTERTOUCH;
         params->matrixRowState12.mul = 1.0f;
-        params->matrixRowState12.destination = INDEX_MODULATION1;
+        params->matrixRowState12.dest1 = INDEX_MODULATION1;
 
         for (int m = 1; m<=9; m++) {
             struct MatrixRowParams* matrixRow =  &((struct MatrixRowParams*)&params->matrixRowState1)[m - 1];
             matrixRow->mul = 0;
-            matrixRow->destination = 0;
+            matrixRow->dest1 = 0;
         }
 
 
@@ -2311,14 +2507,14 @@ void SynthState::randomizePreset() {
         for (int i = 0; i < 2; i++) {
             struct MatrixRowParams* matrixRow =  &((struct MatrixRowParams*)&params->matrixRowState1)[getRandomInt(10)];
             matrixRow->mul = getRandomFloat(0.2f, 3.0f);
-            matrixRow->destination = dest[getRandomInt(7)];
+            matrixRow->dest1 = dest[getRandomInt(7)];
         }
 
         if (modulationRandom >= 2) {
             for (int i = 0; i < 3; i++) {
                 struct MatrixRowParams* matrixRow =  &((struct MatrixRowParams*)&params->matrixRowState1)[getRandomInt(10)];
                 matrixRow->mul = getRandomFloat(1.0f, 3.0f);
-                matrixRow->destination = getRandomInt(DESTINATION_MAX);
+                matrixRow->dest1 = getRandomInt(DESTINATION_MAX);
             }
         }
 
@@ -2327,7 +2523,7 @@ void SynthState::randomizePreset() {
                 struct MatrixRowParams* matrixRow =  &((struct MatrixRowParams*)&params->matrixRowState1)[getRandomInt(10)];
                 float mm = getRandomFloat(2.0f, 5.0f);
                 matrixRow->mul = getRandomFloat(-mm, mm);
-                matrixRow->destination = getRandomInt(DESTINATION_MAX);
+                matrixRow->dest1 = getRandomInt(DESTINATION_MAX);
             }
         }
 

@@ -131,7 +131,8 @@ enum {
 enum {
     ENCODER_MATRIX_SOURCE = 0,
     ENCODER_MATRIX_MUL,
-    ENCODER_MATRIX_DEST,
+    ENCODER_MATRIX_DEST1,
+    ENCODER_MATRIX_DEST2
 };
 
 enum {
@@ -265,8 +266,49 @@ enum FILTER_TYPE {
     FILTER_BASS,
     FILTER_BP,
     FILTER_CRUSHER,
-    FILTER_LAST,
-    FILTER_LP4
+    FILTER_LP2,
+    FILTER_HP2,
+    FILTER_BP2,
+    FILTER_LP3,
+    FILTER_HP3,
+    FILTER_BP3,
+    FILTER_PEAK,
+    FILTER_NOTCH,
+    FILTER_BELL,
+    FILTER_LOWSHELF,
+    FILTER_HIGHSHELF,
+    FILTER_LPHP,
+    FILTER_BPds,
+    FILTER_LPWS,
+    FILTER_TILT,
+    FILTER_STEREO,
+    FILTER_SAT,
+    FILTER_SIGMOID,
+    FILTER_FOLD,
+    FILTER_WRAP,
+    FILTER_ROT,
+    FILTER_TEXTURE1,
+    FILTER_TEXTURE2,
+    FILTER_LPXOR,
+    FILTER_LPXOR2,
+    FILTER_LPSIN,
+    FILTER_HPSIN,
+    FILTER_QUADNOTCH,
+    FILTER_AP4,
+    FILTER_AP4B,
+    FILTER_AP4D,
+    FILTER_ORYX,
+    FILTER_ORYX2,
+    FILTER_ORYX3,
+    FILTER_18DB,
+    FILTER_LADDER,
+    FILTER_LADDER2,
+    FILTER_DIOD,
+    FILTER_KRMG,
+    FILTER_TEEBEE,
+    FILTER_SVFLH,
+    FILTER_CRUSH2,
+    FILTER_LAST
 };
 
 // Display information
@@ -537,6 +579,14 @@ public:
     char stepSelect[2];
     char patternSelect;
 
+    uint8_t getPcbVersion() {
+        return pcbVersion;
+    }
+
+    void setPcbVersion(uint8_t v) {
+        pcbVersion = v;
+    }
+
 private:
     void copySynthParams(char* source, char* dest);
     int getRowFromOperator();
@@ -576,6 +626,9 @@ private:
 
     Storage* storage;
     Hexter* hexter;
+
+    // PCB version
+    uint8_t pcbVersion;
 
 };
 

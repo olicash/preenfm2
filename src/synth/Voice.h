@@ -48,16 +48,22 @@ public:
     void glideFirstNoteOff();
     void glide();
 
+#ifdef CVIN
+    void propagateCvFreq(short newNote);
+#endif
+
+
     bool isReleased() { return this->released; }
     bool isPlaying() { return this->playing; }
     bool isNewNotePending() { return this->newNotePending; }
     unsigned int getIndex() { return this->index; }
-    char getNote() { return this->note; }
-    char getNextPendingNote() { return this->nextPendingNote; }
-    char getNextGlidingNote() { return this->nextGlidingNote; }
+    uint8_t getNote() { return this->note; }
+    uint8_t getNextPendingNote() { return this->nextPendingNote; }
+    uint8_t getNextGlidingNote() { return this->nextGlidingNote; }
     bool isHoldedByPedal() { return this->holdedByPedal; }
     void setHoldedByPedal(bool holded) { this->holdedByPedal = holded; }
-    void setCurrentTimbre(Timbre *timbre);    bool isGliding() { return gliding; }
+    void setCurrentTimbre(Timbre *timbre);    
+    bool isGliding() { return gliding; }
 
     void updateAllModulationIndexes() {
         int numberOfIMs = algoInformation[(int)(currentTimbre->getParamRaw()->engine1.algo)].im;
@@ -75,7 +81,7 @@ public:
             modulationIndex3 = 0.0f;
         }
 
-        if (likely(numberOfIMs < 3)) {
+        if (likely(numberOfIMs <= 3)) {
             return;
         }
 
@@ -126,10 +132,10 @@ public:
         pan3Left = panTable[256 - pan];
         pan3Right = panTable[pan];
 
-        // No matrix for mix4 and pan4
-        mix4 = currentTimbre->getParamRaw()->engineMix2.mixOsc4 + matrix.getDestination(ALL_MIX);
+        mix4 = currentTimbre->getParamRaw()->engineMix2.mixOsc4 + matrix.getDestination(MIX_OSC4) + matrix.getDestination(ALL_MIX);
         mix4 = __USAT((int)(mix4 * 65535) , 16) * inv65535;
-        float pan4 = currentTimbre->getParamRaw()->engineMix2.panOsc4 + matrix.getDestination(ALL_PAN) + 1.0f;
+
+        float pan4 = currentTimbre->getParamRaw()->engineMix2.panOsc4 + matrix.getDestination(PAN_OSC4) + matrix.getDestination(ALL_PAN) + 1.0f;
         pan = __USAT((int)(pan4 * 128), 8);
         pan4Left = panTable[256 - pan];
         pan4Right = panTable[pan];
@@ -305,7 +311,7 @@ public:
             this->lfoStepSeq[1].nextValueInMatrix();
         }
 
-        this->matrix.computeAllDestintations();
+        this->matrix.computeAllDestinations();
         updateAllModulationIndexes();
     }
 
@@ -366,7 +372,7 @@ private:
     bool released;
     bool playing;
     unsigned int index;
-    char note;
+    uint8_t note;
     float velocity;
     float velIm1, velIm2, velIm3, velIm4, velIm5;
     bool newNotePlayed;
@@ -393,14 +399,14 @@ private:
     bool holdedByPedal;
     // Fixing the "plop" when all notes are buisy...
     bool newNotePending;
-    char nextPendingNote;
-    char nextVelocity;
+    uint8_t nextPendingNote;
+    uint8_t nextVelocity;
     unsigned int nextIndex;
 
     // Gliding ?
     bool gliding;
     float glidePhase;
-    char nextGlidingNote;
+    uint8_t nextGlidingNote;
 
     // env Value
     float env1ValueMem;
@@ -413,7 +419,8 @@ private:
     Timbre* currentTimbre;
 
     // glide phase increment
-    static float glidePhaseInc[10];
+    #define nbGlideVals 12
+    static float glidePhaseInc[nbGlideVals];
 
     // Matrix....
     Matrix matrix;

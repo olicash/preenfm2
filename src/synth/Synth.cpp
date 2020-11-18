@@ -24,13 +24,17 @@
 
 #include "hardware/dwt.h"
 
-#ifdef DEBUG
+#ifdef DEBUG_CPU_USAGE
 CYCCNT_buffer cycles_all;
 #endif
 
 extern float frequency[];
 extern float noise[32];
-float ratiosTimbre[]= { 131072.0f * 1.0f, 131072.0f * 1.0f, 131072.0f *  0.5f, 131072.0f * 0.333f, 131072.0f * 0.25f };
+
+// Initialized in main depending of PCB version
+float ratiosTimbre[5];
+float middleSample;
+
 
 Synth::Synth(void) {
 }
@@ -38,14 +42,14 @@ Synth::Synth(void) {
 Synth::~Synth(void) {
 }
 
-void Synth::init() {
+void Synth::init(SynthState* sState) {
     int numberOfVoices[]= { 6, 0, 0, 0 };
     for (int t=0; t<NUMBER_OF_TIMBRES; t++) {
         for (int k=0; k<sizeof(struct OneSynthParams)/sizeof(float); k++) {
             ((float*)&timbres[t].params)[k] = ((float*)&preenMainPreset)[k];
         }
         timbres[t].params.engine1.numberOfVoice = numberOfVoices[t];
-        timbres[t].init(t);
+        timbres[t].init(t, sState);
         for (int v=0; v<MAX_NUMBER_OF_VOICES; v++) {
             timbres[t].initVoicePointer(v, &voices[v]);
         }
@@ -62,7 +66,24 @@ void Synth::init() {
         timbres[t].numberOfVoicesChanged();
     }
     updateNumberOfActiveTimbres();
+
+#ifdef CVIN
+    cvin12Ready = true;
+    cvin34Ready = true;
+    triggeredTimbre = 0;
+#endif
+
 }
+
+void Synth::setDacNumberOfBits(uint32_t dacNumberOfBits) {
+    // Usefull to laverage the number of dac bits in the final stage of sample calculation
+    middleSample = (1 << (dacNumberOfBits - 1)) - 1;
+    ratiosTimbre[0] = (1 << (dacNumberOfBits - 1)) - 1;
+    for (int t = 1; t <= 4; t++) {
+        ratiosTimbre[t] = ratiosTimbre[0] / t;
+    }
+}
+
 
 void Synth::noteOn(int timbre, char note, char velocity) {
     timbres[timbre].noteOn(note, velocity);
@@ -113,14 +134,102 @@ bool Synth::isPlaying() {
 }
 
 
-#ifdef DEBUG
+#ifdef DEBUG_CPU_USAGE
 int cptDisplay = 0;
 float totalCycles = 0;
 #endif
 
 
-void Synth::buildNewSampleBlock() {
+
+void Synth::buildNewSampleBlockCS4344(int32_t *sample) {
     CYCLE_MEASURE_START(cycles_all);
+
+    buildNewSampleBlock();
+    
+    const float *sampleFromTimbre1 = timbres[0].getSampleBlock();
+    const float *sampleFromTimbre2 = timbres[1].getSampleBlock();
+    const float *sampleFromTimbre3 = timbres[2].getSampleBlock();
+    const float *sampleFromTimbre4 = timbres[3].getSampleBlock();
+
+    int32_t *cb = (int32_t*)sample;
+    int32_t *cbFin = (int32_t*)&sample[64];
+
+    while (cb != cbFin) {
+        int32_t tmpV = *sampleFromTimbre1++ + *sampleFromTimbre2++ + *sampleFromTimbre3++ + *sampleFromTimbre4++;
+        *cb++ = ((tmpV >> 8) + ((tmpV & 0x000000ff) << 24));
+        tmpV = *sampleFromTimbre1++ + *sampleFromTimbre2++ + *sampleFromTimbre3++ + *sampleFromTimbre4++;
+        *cb++ = ((tmpV >> 8) + ((tmpV & 0x000000ff) << 24));
+        tmpV = *sampleFromTimbre1++ + *sampleFromTimbre2++ + *sampleFromTimbre3++ + *sampleFromTimbre4++;
+        *cb++ = ((tmpV >> 8) + ((tmpV & 0x000000ff) << 24));
+        tmpV = *sampleFromTimbre1++ + *sampleFromTimbre2++ + *sampleFromTimbre3++ + *sampleFromTimbre4++;
+        *cb++ = ((tmpV >> 8) + ((tmpV & 0x000000ff) << 24));
+    }
+
+    CYCLE_MEASURE_END();
+
+#ifdef DEBUG_CPU_USAGE
+    if (cptDisplay++ > 500) {
+        totalCycles += cycles_all.remove();
+
+        if (cptDisplay == 600) {
+            float max = SystemCoreClock * 32.0f * PREENFM_FREQUENCY_INVERSED;
+            cpuUsage = totalCycles / max;
+            if (cpuUsage > 95) {
+                for (int v = 0; v < MAX_NUMBER_OF_VOICES; v++) {
+                    this->voices[v].noteOff();
+                }
+            }
+            cptDisplay = 0;
+            totalCycles = 0;
+        }
+    }
+#endif
+
+}
+
+
+void Synth::buildNewSampleBlockMcp4922() {
+    CYCLE_MEASURE_START(cycles_all);
+    buildNewSampleBlock();
+
+    uint32_t *sample = &samples[writeCursor];
+    const float *sampleFromTimbre1 = timbres[0].getSampleBlock();
+    const float *sampleFromTimbre2 = timbres[1].getSampleBlock();
+    const float *sampleFromTimbre3 = timbres[2].getSampleBlock();
+    const float *sampleFromTimbre4 = timbres[3].getSampleBlock();
+
+    uint32_t *cb = sample;
+    uint32_t *cbFin = &sample[64];
+
+    while (cb != cbFin) {
+        *cb++ = (int)((*sampleFromTimbre1++ + *sampleFromTimbre2++ + *sampleFromTimbre3++ + *sampleFromTimbre4++) + middleSample);
+        *cb++ = (int)((*sampleFromTimbre1++ + *sampleFromTimbre2++ + *sampleFromTimbre3++ + *sampleFromTimbre4++) + middleSample);
+        *cb++ = (int)((*sampleFromTimbre1++ + *sampleFromTimbre2++ + *sampleFromTimbre3++ + *sampleFromTimbre4++) + middleSample);
+        *cb++ = (int)((*sampleFromTimbre1++ + *sampleFromTimbre2++ + *sampleFromTimbre3++ + *sampleFromTimbre4++) + middleSample);
+    }
+    writeCursor = (writeCursor + 64) & 255;
+
+    CYCLE_MEASURE_END();
+
+#ifdef DEBUG_CPU_USAGE
+
+    if (cptDisplay++ > 500) {
+        totalCycles += cycles_all.remove();
+
+        if (cptDisplay == 600) {
+            float max = SystemCoreClock * 32.0f * PREENFM_FREQUENCY_INVERSED;
+            cpuUsage = totalCycles / max;
+            cptDisplay = 0;
+            totalCycles = 0;
+        }
+    }
+#endif
+
+
+}
+
+
+void Synth::buildNewSampleBlock() {
 
     // We consider the random number is always ready here...
     uint32_t random32bit = RNG_GetRandomNumber();
@@ -132,24 +241,119 @@ void Synth::buildNewSampleBlock() {
         noise[noiseIndex++] = (random32bit >> 16) * .000030518f - 1.0f; // value between -1 and 1.
     }
 
-    for (int t=0; t<NUMBER_OF_TIMBRES; t++) {
+#ifdef CVIN
+    cvin->updateValues();
+#endif
+
+    for (int t = 0; t < NUMBER_OF_TIMBRES; t++) {
         timbres[t].cleanNextBlock();
         if (likely(timbres[t].params.engine1.numberOfVoice > 0)) {
             timbres[t].prepareForNextBlock();
-            // eventually glide
+            // need to glide ?
             if (timbres[t].voiceNumber[0] != -1 && this->voices[timbres[t].voiceNumber[0]].isGliding()) {
                 this->voices[timbres[t].voiceNumber[0]].glide();
             }
         }
+
+#ifdef CVIN
+        timbres[t].setMatrixSource(MATRIX_SOURCE_CVIN1, cvin->getCvin1());
+        timbres[t].setMatrixSource(MATRIX_SOURCE_CVIN2, cvin->getCvin2());
+        timbres[t].setMatrixSource(MATRIX_SOURCE_CVIN3, cvin->getCvin3());
+        timbres[t].setMatrixSource(MATRIX_SOURCE_CVIN4, cvin->getCvin4());
+#endif
         timbres[t].prepareMatrixForNewBlock();
     }
+
+
+#ifdef CVIN
+    // We need matrix source in osc
+    // cvin1 can trigger Instrument 1 notes
+    int cvinstrument = synthState->fullState.midiConfigValue[MIDICONFIG_CVIN1_2];
+    if (cvinstrument >= 0) {
+        int timbreIndex = 0;
+        int timbreToTrigger[4];
+        switch (cvinstrument) {
+            case 1:
+                timbreToTrigger[timbreIndex++] = 0;
+            break;
+            case 2:
+                timbreToTrigger[timbreIndex++] = 1;
+            break;
+            case 3:
+                timbreToTrigger[timbreIndex++] = 2;
+            break;
+            case 4: 
+                timbreToTrigger[timbreIndex++] = 3;
+            break;
+            case 5:
+                timbreToTrigger[timbreIndex++] = 0;
+                timbreToTrigger[timbreIndex++] = 1;
+            break;
+            case 6: 
+                timbreToTrigger[timbreIndex++] = 0;
+                timbreToTrigger[timbreIndex++] = 1;
+                timbreToTrigger[timbreIndex++] = 2;
+            break;
+            case 7:
+                timbreToTrigger[timbreIndex++] = 0;
+                timbreToTrigger[timbreIndex++] = 1;
+                timbreToTrigger[timbreIndex++] = 2;
+                timbreToTrigger[timbreIndex++] = 3;
+            break;
+            case 8:
+                timbreToTrigger[timbreIndex++] = triggeredTimbre;
+            break;
+            case 9:
+                timbreToTrigger[timbreIndex++] = (int)((noise[0] + 1.0f) * 2.0f);
+            break;
+            case 10:
+                timbreToTrigger[timbreIndex++] = (int)((cvin->getCvin3() + 1.0f) * 2.0f);
+            break;
+        }
+
+        // CV_GATE from 0 to 100 => cvGate from 62 to 962. 
+        // Which leaves some room for the histeresit algo bellow.
+        int cvGate = synthState->fullState.midiConfigValue[MIDICONFIG_CV_GATE] * 9 + 62;
+        if (cvin12Ready) {
+            if (cvin->getGate() > cvGate) {
+                cvin12Ready = false;
+                for (int tk = 0; tk < timbreIndex; tk++ ) {
+                    timbres[timbreToTrigger[tk]].setCvFrequency(cvin->getFrequency());
+                    timbres[timbreToTrigger[tk]].noteOn(128, 127);
+                    visualInfo->noteOn(timbreToTrigger[tk], true);
+                }
+                // inc timbre triggerTimbre if we are in Seq mode
+                if (unlikely(cvinstrument == 8)) {
+                    triggeredTimbre++;
+                    triggeredTimbre &= 0x3;
+                }
+            }
+        } else {
+            if (cvin->getGate() > (cvGate + 50)) {
+                // Adjust frequency with CVIN2 !!! while gate is on !!
+                for (int tk = 0; tk < timbreIndex; tk++ ) {
+                    timbres[timbreToTrigger[tk]].setCvFrequency(cvin->getFrequency());
+                    timbres[timbreToTrigger[tk]].propagateCvFreq(128);
+                }
+            } else if (cvin->getGate() < (cvGate - 50)) {
+                for (int tk = 0; tk < timbreIndex; tk++ ) {
+                    timbres[timbreToTrigger[tk]].noteOff(128);
+                }
+                cvin12Ready = true;
+            }
+        }
+    }
+#endif
 
     // render all voices in their timbre sample block...
     // 16 voices
 
+    playingNotes = 0;
+
     for (int v = 0; v < MAX_NUMBER_OF_VOICES; v++) {
         if (likely(this->voices[v].isPlaying())) {
             this->voices[v].nextBlock();
+            playingNotes ++;
         }
     }
 
@@ -167,41 +371,6 @@ void Synth::buildNewSampleBlock() {
         timbres[3].fxAfterBlock(ratioTimbre);
     }
 
-    const float *sampleFromTimbre1 = timbres[0].getSampleBlock();
-    const float *sampleFromTimbre2 = timbres[1].getSampleBlock();
-    const float *sampleFromTimbre3 = timbres[2].getSampleBlock();
-    const float *sampleFromTimbre4 = timbres[3].getSampleBlock();
-
-    int *cb = &samples[writeCursor];
-
-    float toAdd = 131071.0f;
-    for (int s = 0; s < 64/4; s++) {
-        *cb++ = (int)((*sampleFromTimbre1++ + *sampleFromTimbre2++ + *sampleFromTimbre3++ + *sampleFromTimbre4++) + toAdd);
-        *cb++ = (int)((*sampleFromTimbre1++ + *sampleFromTimbre2++ + *sampleFromTimbre3++ + *sampleFromTimbre4++) + toAdd);
-        *cb++ = (int)((*sampleFromTimbre1++ + *sampleFromTimbre2++ + *sampleFromTimbre3++ + *sampleFromTimbre4++) + toAdd);
-        *cb++ = (int)((*sampleFromTimbre1++ + *sampleFromTimbre2++ + *sampleFromTimbre3++ + *sampleFromTimbre4++) + toAdd);
-    }
-
-    writeCursor = (writeCursor + 64) & 255;
-
-    CYCLE_MEASURE_END();
-
-#ifdef DEBUG
-    if (cptDisplay++ > 500) {
-        totalCycles += cycles_all.remove();
-
-        if (cptDisplay == 600) {
-            float max = SystemCoreClock * 32.0f * PREENFM_FREQUENCY_INVERSED;
-            float percent = totalCycles / max;
-            lcd.setCursor(14, 1);
-            lcd.print('>');
-            lcd.printWithOneDecimal(percent);
-            lcd.print('%');
-            cptDisplay = 0;
-            totalCycles = 0;
-        }
-    }
-#endif
 }
 
 void Synth::beforeNewParamsLoad(int timbre) {
@@ -341,6 +510,7 @@ void Synth::newParamValue(int timbre, int currentRow, int encoder, ParameterDisp
         switch (encoder) {
         case ENCODER_ENGINE_ALGO:
             fixMaxNumberOfVoices(timbre);
+            timbres[timbre].initADSRloop();
             break;
         case ENCODER_ENGINE_VOICE:
             if (newValue > oldValue) {
@@ -422,8 +592,7 @@ void Synth::newParamValue(int timbre, int currentRow, int encoder, ParameterDisp
         break;
     case ROW_MATRIX_FIRST ... ROW_MATRIX_LAST:
         timbres[timbre].verifyLfoUsed(encoder, oldValue, newValue);
-        if (encoder == ENCODER_MATRIX_DEST) {
-            // Reset old destination
+        if (encoder == ENCODER_MATRIX_DEST1 || encoder == ENCODER_MATRIX_DEST2) {
             timbres[timbre].resetMatrixDestination(oldValue);
         }
         break;
@@ -555,6 +724,7 @@ void Synth::setNewStepValueFromMidi(int timbre, int whichStepSeq, int step, int 
 void Synth::setNewSymbolInPresetName(int timbre, int index, int value) {
     this->timbres[timbre].getParamRaw()->presetName[index] = value;
 }
+
 
 
 void Synth::setScalaEnable(bool enable) {
@@ -707,6 +877,25 @@ bool Synth::retuneNote(char note,char retuneNote,float detune) {
     float old=frequency[note];
     frequency[note]=440.f*pow(2.f,((retuneNote+detune)-69.f)/12.f);
     return old!=frequency[note];
+}
+
+void Synth::newMenuSelect(FullState* fullState) {
+    if (fullState->currentMenuItem->menuState == MENU_CONFIG_SETTINGS 
+         && midiConfig[fullState->menuSelect].valueName != NULL
+         && midiConfig[fullState->menuSelect].valueName[0][0] == 'G') {
+            updateGlobalTuningFromConfig();
+    }
+#ifdef CVIN      
+    if (fullState->currentMenuItem->menuState == MENU_CONFIG_SETTINGS) {
+        if (fullState->menuSelect == MIDICONFIG_CVIN_A2 || fullState->menuSelect == MIDICONFIG_CVIN_A6) {
+            cvin->updateFormula(synthState->fullState.midiConfigValue[MIDICONFIG_CVIN_A2], synthState->fullState.midiConfigValue[MIDICONFIG_CVIN_A6]);
+        }
+    }
+#endif
+}
+
+void Synth::updateGlobalTuningFromConfig() {
+    synthState->fullState.globalTuning = 430.0f + .2f * synthState->fullState.midiConfigValue[MIDICONFIG_GLOBAL_TUNING];
 }
 
 

@@ -26,48 +26,11 @@ extern USB_OTG_CORE_HANDLE          usbOTGDevice;
 
 
 #define INV127 .00787401574803149606f
+#define INV128 .0078125f
 
 // Let's have sysexBuffer in regular RAM.
 #define SYSEX_BUFFER_SIZE 1024
 uint8_t sysexBuffer[SYSEX_BUFFER_SIZE];
-
-
-#include "LiquidCrystal.h"
-extern LiquidCrystal lcd;
-
-
-#ifdef LCDDEBUG
-
-#include "LiquidCrystal.h"
-extern LiquidCrystal lcd;
-
-int pos = 0;
-
-void eraseNext(int pos) {
-    int x = (pos % 2) * 10;
-    int y = pos / 2;
-    y = y % 4;
-    lcd.setCursor(x,y);
-    lcd.print("- --- --- ");
-}
-
-
-void debug(const char *l, int i1, int i2) {
-    int x = (pos % 2) * 10;
-    int y = pos / 2;
-    y = y % 4;
-    lcd.setCursor(x,y);
-    lcd.print("          ");
-    lcd.setCursor(x,y);
-    lcd.print(l);
-    lcd.setCursor(x+2, y);
-    lcd.print(i1);
-    lcd.setCursor(x+6, y);
-    lcd.print(i2);
-    pos++;
-    eraseNext(pos);
-}
-#endif
 
 MidiDecoder::MidiDecoder() {
     currentEventState.eventState = MIDI_EVENT_WAITING;
@@ -100,6 +63,7 @@ void MidiDecoder::setSynth(Synth* synth) {
 void MidiDecoder::setVisualInfo(VisualInfo *visualInfo) {
     this->visualInfo = visualInfo;
 }
+
 
 void MidiDecoder::newByte(unsigned char byte) {
     // Realtime first !
@@ -232,9 +196,6 @@ void MidiDecoder::newMessageType(unsigned char byte) {
         }
         break;
         default :
-#ifdef LCDDEBUG
-            debug("W", currentEvent.eventType, 0);
-#endif
             // Nothing to do...
             break;
     }
@@ -297,7 +258,6 @@ void MidiDecoder::midiEventReceived(MidiEvent midiEvent) {
         } else {
             for (int tk = 0; tk< timbreIndex; tk++ ) {
                 this->synth->noteOn(timbres[tk], midiEvent.value[0], midiEvent.value[1]);
-
                 visualInfo->noteOn(timbres[tk], true);
             }
         }
@@ -487,8 +447,14 @@ void MidiDecoder::controlChange(int timbre, MidiEvent& midiEvent) {
             this->synth->setNewValueFromMidi(timbre, ROW_EFFECT, midiEvent.value[0] - CC_FILTER_PARAM1 + 1,
                     (float)midiEvent.value[1] * INV127);
             break;
+        case CC_VOLUME:
+            // Same as CC_FILTER_GAIN but from 0.0 to 1.0
+            this->synth->setNewValueFromMidi(timbre, ROW_EFFECT, 3,
+                    (float)midiEvent.value[1] * INV127);
+            break;
         case CC_FILTER_GAIN:
-            this->synth->setNewValueFromMidi(timbre, ROW_EFFECT, midiEvent.value[0] - CC_FILTER_PARAM1 + 1,
+            // Value from 0.0 to 1.27
+            this->synth->setNewValueFromMidi(timbre, ROW_EFFECT, 3,
                     (float)midiEvent.value[1] * .01f);
             break;
         case CC_ENV_ATK_OP1:
@@ -575,7 +541,12 @@ void MidiDecoder::controlChange(int timbre, MidiEvent& midiEvent) {
             this->synth->setNewValueFromMidi(timbre, ROW_ARPEGGIATOR2, ENCODER_ARPEGGIATOR_DURATION,
                     (float)midiEvent.value[1]);
             break;
-
+        case CC_MPE_SLIDE_CC74:
+            this->synth->getTimbre(timbre)->setMatrixSource(MATRIX_SOURCE_MPESLIDE, INV127 * midiEvent.value[1]);
+            break;
+        case CC_PAN:
+            this->synth->getTimbre(timbre)->setLeftRightBalance(INV128 * (midiEvent.value[1] + 1));
+            break;
         }
     }
 
@@ -1068,7 +1039,7 @@ void MidiDecoder::sendSysexByte(uint8_t byte) {
     }
 
     usartBufferOut.insert(byte);
-    USART_ITConfig(USART3, USART_IT_TXE, ENABLE);
+    USART3->CR1 |= USART_FLAG_TXE;
     // Wait for midi to be flushed
     while (usartBufferOut.getCount()>0) {}
 
@@ -1131,7 +1102,7 @@ void MidiDecoder::flushMidiOut() {
         usbBufWrite = usbBufRead;
     }
 
-    USART_ITConfig(USART3, USART_IT_TXE, ENABLE);
+    USART3->CR1 |= USART_FLAG_TXE;
 }
 
 int MidiDecoder::getNrpnRowFromParamRow(int paramRow) {

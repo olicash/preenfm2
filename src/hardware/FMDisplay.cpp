@@ -24,10 +24,8 @@ const char* stepChars  = "_123456789ABCDEF";
 
 #define CUSTOM_CHAR_NOTE (char)7
 
-// = / 10000
-#define TMP_FLOAT PREENFM_FREQUENCY * .0001
 
-unsigned int screenSaverGoal[] = { 2*60 * TMP_FLOAT, 5*60*TMP_FLOAT, 10*60*TMP_FLOAT, 60*60*TMP_FLOAT };
+unsigned int screenSaverGoal[4];
 
 const char* enveloppeRandomizer [] = { "keep", "perc", "pad ", "rand" };
 const char* otherRandomizer [] = { "keep", "soft", "medi", "high" };
@@ -39,7 +37,7 @@ FMDisplay::FMDisplay() {
 FMDisplay::~FMDisplay() {
 }
 
-void FMDisplay::init(LiquidCrystal* lcd, Storage* storage) {
+void FMDisplay::init(LiquidCrystal* lcd, Storage* storage, float ticksPerMinute) {
     refreshStatus = 0;
     this->lcd = lcd;
     this->storage = storage;
@@ -53,11 +51,15 @@ void FMDisplay::init(LiquidCrystal* lcd, Storage* storage) {
     customCharsInit();
     screenSaveTimer = 0;
     screenSaverMode = false;
+
+    screenSaverGoal[0] =  2 * ticksPerMinute;
+    screenSaverGoal[1] =  5 * ticksPerMinute;
+    screenSaverGoal[2] =  10 * ticksPerMinute;
+    screenSaverGoal[3] =  60 * ticksPerMinute;
+
     algoCounterForIMInformation = false;
     lcd->clear();
 }
-
-
 
 void FMDisplay::customCharsInit() {
 
@@ -889,7 +891,7 @@ void FMDisplay::newMenuState(FullState* fullState) {
         break;
     case MENU_CONFIG_SETTINGS_SAVE:
         lcd->setCursor(1, menuRow);
-        lcd->print("Save Config ?");
+        lcd->print("Save Config ?      ");
         break;
     case MENU_SAVE_SYSEX_PATCH:
         lcd->setCursor(1, menuRow);
@@ -1041,11 +1043,14 @@ void FMDisplay::newMenuSelect(FullState* fullState) {
         eraseRow(menuRow);
         lcd->setCursor(1, menuRow);
         lcd->print(midiConfig[fullState->menuSelect].title);
-        if (midiConfig[fullState->menuSelect].valueName != NULL) {
-            lcd->print(midiConfig[fullState->menuSelect].valueName[fullState->midiConfigValue[fullState->menuSelect]]);
-        } else {
+        if (midiConfig[fullState->menuSelect].valueName == NULL) {
             lcd->print((int)fullState->midiConfigValue[fullState->menuSelect]);
             lcd->print(' ');
+        } else if (midiConfig[fullState->menuSelect].valueName[0][0] == 'G') {
+            // Global tuning has been updated in Synth class just before
+            lcd->print(fullState->globalTuning + .01f);
+        } else if (midiConfig[fullState->menuSelect].valueName != NULL) {
+            lcd->print(midiConfig[fullState->menuSelect].valueName[fullState->midiConfigValue[fullState->menuSelect]]);
         }
         break;
     case MENU_LOAD_RANDOMIZER:

@@ -24,6 +24,11 @@
 #include "LfoEnv.h"
 #include "LfoStepSeq.h"
 
+#ifdef CVIN
+#include "CVIn.h"
+#include "VisualInfo.h"
+#endif
+
 #include "SynthParamListener.h"
 #include "SynthStateAware.h"
 
@@ -32,7 +37,7 @@
 enum eSysexState {eIgnoring=0,eMatchingSysex,eSysexValid,eMatchingMTS,eMatchingBank,eMatchingProg,eMatchingChannel,eTuningName,eNumTunings,eTuningData,eCheckSum};
 enum eMTSFormat {eRequest=0,eBulk,eSingle,eScaleOctOneByte,eScaleOctTwoByte,eScaleOctOneByteExt,eScaleOctTwoByteExt};
 
-class Synth : public SynthParamListener, public SynthStateAware, public SynthParamChecker
+class Synth : public SynthParamListener, public SynthStateAware, public SynthParamChecker, public SynthMenuListener
 {
 public:
     Synth(void);
@@ -40,8 +45,19 @@ public:
 
     void setSynthState(SynthState* sState) {
         SynthStateAware::setSynthState(sState);
-        init();
+        init(sState);
     }
+
+    void setDacNumberOfBits(uint32_t dacNumberOfBits);
+#ifdef CVIN
+    void setCVIn(CVIn * cvin) {
+        this->cvin = cvin;
+    }
+
+    void setVisualInfo(VisualInfo *visualInfo) {
+        this->visualInfo = visualInfo;
+    }
+#endif
 
     void noteOn(int timbre, char note, char velocity);
     void noteOff(int timbre, char note);
@@ -50,7 +66,8 @@ public:
     void allSoundOff(int timbre);
     bool isPlaying();
     void buildNewSampleBlock();
-
+    void buildNewSampleBlockMcp4922();
+    void buildNewSampleBlockCS4344(int32_t *sample);
 
     // Overide SynthParamListener
     void playNote(int timbreNumber, char note, char velocity) {
@@ -125,6 +142,10 @@ public:
         }
     }
 
+    uint32_t *getSample() {
+        return this->samples;
+    }
+
     inline int leftSampleAtReadCursor() const {
         return this->samples[this->readCursor];
     }
@@ -162,16 +183,31 @@ public:
 
     void setCurrentInstrument(int value);
 
+    // SynthMenuListener
+    void newSynthMode(FullState* fullState) {};
+    void menuBack(enum MenuState  oldMenuState, FullState* fullState) {};
+    void newMenuState(FullState* fullState) {};
+    void newMenuSelect(FullState* fullState);
+
+    void updateGlobalTuningFromConfig();
+
+
 #ifdef DEBUG
     void debugVoice();
     void showCycles();
 #endif
 
+    float getCpuUsage() {
+        return cpuUsage;
+    }
+
+    int getPlayingNotes() {
+        return playingNotes;
+    }
 
 private:
     // Called by setSynthState
-    void init();
-    
+    void init(SynthState* sState);
     bool decodeBufferAndApplyTuning(const unsigned char *buffer,int len,unsigned char *updatedNotes);
     bool retuneNote(char note,char retuneNote,float detune);
 
@@ -185,14 +221,22 @@ private:
     // sample Buffer
     volatile int readCursor;
     volatile int writeCursor;
-    int samples[256];
+    uint32_t samples[256];
 
     // gate
     float currentGate;
     
+    float cpuUsage;
+    int playingNotes;
     unsigned char updatedNotes[16];
-    
- };
+#ifdef CVIN
+    bool cvin12Ready ;
+    bool cvin34Ready ;
+    VisualInfo *visualInfo;
+    CVIn* cvin;
+    int triggeredTimbre;
+#endif
+};
 
 
 
